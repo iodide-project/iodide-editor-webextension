@@ -1,8 +1,5 @@
 import pynvim
 import threading
-import os
-os.sys.path.append("/tmp/simple-websocket-server")
-
 from SimpleWebSocketServer import SimpleWebSocketServer, WebSocket
 
 all_connections =[]
