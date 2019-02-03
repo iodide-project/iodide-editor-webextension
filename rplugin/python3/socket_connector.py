@@ -39,18 +39,21 @@ class TestPlugin(object):
 
     def __init__(self, nvim):
         self.nvim = nvim
+        self.com_clear=False ## specifies whether the user has activated communication
 
 
     @pynvim.command('StartComm', nargs='*', range='')
     def start_comm(self,args,range):
-
+        self.com_clear =True
         server = SimpleWebSocketServer('', 9876, SimpleEcho)
         print("starting serve forever, could run into trouble")
         threading.Thread(target=server.serveforever).start()
         print("started threead")
         self.server = server
 
-    @pynvim.autocmd('TextChangedI', pattern='*.py', eval='expand("<afile>")', sync=True)
-    def on_bufenter(self, filename):
+    @pynvim.autocmd('TextChangedI', pattern='*', eval='expand("<afile>")', sync=True)
+    def on_text_change(self, filename):
+        if not self.com_clear:
+            return None
         self.nvim.out_write('testplugin is in ' + filename + '\n')
         all_connections[-1].sm("\n".join(self.nvim.current.buffer[:]))
