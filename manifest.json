@@ -1,0 +1,17 @@
+{
+
+  "manifest_version": 2,
+  "name": "Iodide-exed",
+  "version": "1.0",
+
+  "description": "facilitate communication between Iodide and external editors via secure websockets",
+
+  "icons": {
+  },
+ "permissions": [
+        "*://extremely-alpha.iodide.io/*", "*://localhost/"
+],
+    "background":{
+        "scripts":["background.js"]
+    }
+}
