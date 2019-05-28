@@ -9,7 +9,7 @@
   "icons": {
   },
  "permissions": [
-        "*://extremely-alpha.iodide.io/*", "*://localhost/"
+        "*://alpha.iodide.io/*", "*://localhost/"
 ],
     "background":{
         "scripts":["background.js"]
