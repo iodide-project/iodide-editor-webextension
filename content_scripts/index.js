@@ -13,6 +13,7 @@ let insertText = (text,cursorPos) => {
 
 let replaceAll = (text) => {
     return JSON.stringify({
+        exMessageType:"REPLACE_ALL",
         text,
     })
 }
@@ -21,12 +22,16 @@ let replaceAll = (text) => {
 function postToIodide(externalEditorMessageEvent,iodideEditorMessageEvent) {
     //  case section to decide on the function to call
     // translate the message event into an action that changes the iodide editor
+    console.log("debug first parameter",externalEditorMessageEvent)
     let externalEditorAction 
     switch (externalEditorMessageEvent.type) { // type will be the result of processing before hand
         // these aren't actually what the editor is going to communicate in the final form
         case "INSERT_TEXT":
+            console.log("using insert text type")
             externalEditorAction = insertText(externalEditorMessageEvent.data,externalEditorMessageEvent.pos)
+            break;
         default:
+            console.log("using replace all type")
             externalEditorAction = replaceAll(externalEditorMessageEvent.data)
     }
     iodideEditorMessageEvent.ports[0].postMessage(externalEditorAction)
@@ -60,9 +65,13 @@ function postToIodide(externalEditorMessageEvent,iodideEditorMessageEvent) {
           s.onmessage = messageEvent => {
               // will call function to post the correct iodide message object 
               // !! hard coding the type for development work
-              messageEvent.type = "INSERT_TEXT"
-              messageEvent.pos = 5 // !! probably will require line and column info in the actual implementation
-              postToIodide(messageEvent,e)
+              // trim down and modify the extension messageevent
+              let modifiedEvent = {
+                  data:messageEvent.data,
+            }
+              modifiedEvent.type = "INSERT_TEXT"
+              modifiedEvent.pos = 5 // !! probably will require line and column info in the actual implementation
+              postToIodide(modifiedEvent,e)
           };
         }
 })
