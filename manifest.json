@@ -8,10 +8,9 @@
 
   "icons": {
   },
- "permissions": [
-        "*://alpha.iodide.io/*", "*://localhost/"
-],
-    "background":{
-        "scripts":["background.js"]
-    }
+"content_scripts":[
+    {
+        "matches":["*://alpha.iodide.io/*","*://localhost/*"],
+        "js":["content_scripts/index.js"]
+    }]
 }
