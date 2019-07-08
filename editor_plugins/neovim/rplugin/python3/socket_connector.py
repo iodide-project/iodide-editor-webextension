@@ -30,7 +30,7 @@ class SimpleEcho(WebSocket):
 #
 
 import pynvim
-
+import json
 @pynvim.plugin
 class TestPlugin(object):
 
@@ -52,5 +52,9 @@ class TestPlugin(object):
     def on_text_change(self, filename):
         if not self.com_clear:
             return None
-        self.nvim.out_write('testplugin is in ' + filename + '\n')
-        all_connections[-1].sm("\n".join(self.nvim.current.buffer[:]))
+        ## grab the last character created
+        cursor_position = self.nvim.current.window.cursor
+        character_entered = self.nvim.current.buffer[cursor_position[0]-1][cursor_position[1]-1] ## cursor position's first argument is 1 index based, must go down by one for the active line
+        ## the second index is zero based, but the cursor col will have just increased by 1 when the text changes
+        msg_object = {"pos":cursor_position,"type":"INSERT_TEXT","text":character_entered}
+        all_connections[-1].sm(json.dumps(msg_object))
