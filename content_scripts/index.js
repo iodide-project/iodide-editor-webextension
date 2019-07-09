@@ -2,6 +2,7 @@
 // the different types of messages to send along to iodide. Based on what the editor plugin says the user is up to we would use one or another of these
 
 let insertText = (text,cursorPos) => {
+  // msgdata becomes text here
     return JSON.stringify({
         exMessageType:"INSERT_TEXT",
         cursorPosition:cursorPos,
@@ -28,11 +29,11 @@ function postToIodide(externalEditorMessageEvent,iodideEditorMessageEvent) {
         // these aren't actually what the editor is going to communicate in the final form
         case "INSERT_TEXT":
             console.log("using insert text type")
-            externalEditorAction = insertText(externalEditorMessageEvent.data,externalEditorMessageEvent.pos)
+            externalEditorAction = insertText(externalEditorMessageEvent.text,externalEditorMessageEvent.pos)
             break;
         default:
             console.log("using replace all type")
-            externalEditorAction = replaceAll(externalEditorMessageEvent.data)
+            externalEditorAction = replaceAll(externalEditorMessageEvent.text)
     }
     iodideEditorMessageEvent.ports[0].postMessage(externalEditorAction)
 }
@@ -63,16 +64,13 @@ function postToIodide(externalEditorMessageEvent,iodideEditorMessageEvent) {
         // when extension socket receives a message from the editor plugin's end of the socket just automatically pass into the message channel 
             // to send it along to iodide's editor
           s.onmessage = messageEvent => {
-              // will call function to post the correct iodide message object 
-              // !! hard coding the type for development work
-              // trim down and modify the extension messageevent
-              let modifiedEvent = {
-                  data:messageEvent.data,
-            }
-              modifiedEvent.type = "INSERT_TEXT"
-              modifiedEvent.pos = 5 // !! probably will require line and column info in the actual implementation
-              postToIodide(modifiedEvent,e)
+            // have to parse the original messageEvent.data object for the plugin message type
+            let pluginMessage = JSON.parse(messageEvent.data)
+
+            // will call function to post the correct iodide message object 
+            // trim down and modify the extension messageevent
+            postToIodide(pluginMessage,e)
           };
         }
-})
+    })
 })()
