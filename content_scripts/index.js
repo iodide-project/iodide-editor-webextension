@@ -19,6 +19,15 @@ let replaceAll = (text) => {
     })
 }
 
+let deletionEvent = (cursorPos,numberChars) => {
+  console.log("calling deletion event")
+  return JSON.stringify({
+    exMessageType:"DELETE_TEXT",
+    cursorPosition:cursorPos,
+    numCharsToDelete:numberChars
+  })
+}
+
 
 function postToIodide(externalEditorMessageEvent,iodideEditorMessageEvent) {
     //  case section to decide on the function to call
@@ -27,15 +36,21 @@ function postToIodide(externalEditorMessageEvent,iodideEditorMessageEvent) {
     let externalEditorAction 
     switch (externalEditorMessageEvent.type) { // type will be the result of processing before hand
         // these aren't actually what the editor is going to communicate in the final form
-        case "INSERT_TEXT":
-            console.log("using insert text type")
-            externalEditorAction = insertText(externalEditorMessageEvent.text,externalEditorMessageEvent.pos)
-            break;
-        default:
-            console.log("using replace all type")
-            externalEditorAction = replaceAll(externalEditorMessageEvent.text)
+      case "DELETE_TEXT": 
+        console.log("using delete text")
+        externalEditorAction = deletionEvent(externalEditorMessageEvent.pos,externalEditorMessageEvent.numChars)
+        console.log("deletion to iodide is ",externalEditorAction)
+        console.log("missing e? ",iodideEditorMessageEvent.ports)
+        break;
+      case "INSERT_TEXT":
+        console.log("using insert text type")
+        externalEditorAction = insertText(externalEditorMessageEvent.text,externalEditorMessageEvent.pos)
+        break;
+      default:
+        console.log("using replace all type")
+        externalEditorAction = replaceAll(externalEditorMessageEvent.text)
     }
-    iodideEditorMessageEvent.ports[0].postMessage(externalEditorAction)
+  iodideEditorMessageEvent.ports[0].postMessage(externalEditorAction)
 }
 
 
@@ -55,9 +70,17 @@ function postToIodide(externalEditorMessageEvent,iodideEditorMessageEvent) {
             // port is accessible off e object
             console.log("returning message")
           const s = new WebSocket("ws://localhost:9876");
-          s.onopen = e => {
+          s.onopen = openE => {
             console.log("no more wait")
-            console.log(`opened ${e}`);
+            console.log(`opened ${openE}`);
+            setInterval(()=>{
+              console.log("timer deleting")
+              postToIodide({
+                type:"DELETE_TEXT",
+                pos:[0,5],
+                numChars:1,
+              },e)
+            },5000)
           };
           // s.onclose = function(e) { alert("closed");console.log(e) }
             
@@ -66,6 +89,7 @@ function postToIodide(externalEditorMessageEvent,iodideEditorMessageEvent) {
           s.onmessage = messageEvent => {
             // have to parse the original messageEvent.data object for the plugin message type
             let pluginMessage = JSON.parse(messageEvent.data)
+            // occasionally try to remove a letter
 
             // will call function to post the correct iodide message object 
             // trim down and modify the extension messageevent
