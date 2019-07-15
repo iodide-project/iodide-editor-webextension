@@ -28,6 +28,15 @@ let deletionEvent = (cursorPos,numberChars) => {
   })
 }
 
+// assuming that the tool has tracked the cursor to this point we should just evaluate the text here?
+// could be necessary to send cursorpos too...
+let requestChunkEval = () => {
+  console.log("requesting evaluation")
+  return JSON.stringify({
+    exMessageType:"EVAL_CHUNK",
+  })
+}
+
 
 function postToIodide(externalEditorMessageEvent,iodideEditorMessageEvent) {
     //  case section to decide on the function to call
@@ -36,6 +45,9 @@ function postToIodide(externalEditorMessageEvent,iodideEditorMessageEvent) {
     let externalEditorAction 
     switch (externalEditorMessageEvent.type) { // type will be the result of processing before hand
         // these aren't actually what the editor is going to communicate in the final form
+      case "EVAL_CHUNK":
+        externalEditorAction = requestChunkEval() 
+        break;
       case "DELETE_TEXT": 
         console.log("using delete text")
         externalEditorAction = deletionEvent(externalEditorMessageEvent.pos,externalEditorMessageEvent.numChars)
@@ -50,6 +62,7 @@ function postToIodide(externalEditorMessageEvent,iodideEditorMessageEvent) {
         console.log("using replace all type")
         externalEditorAction = replaceAll(externalEditorMessageEvent.text)
     }
+  console.log("just before sending over channel",externalEditorAction)
   iodideEditorMessageEvent.ports[0].postMessage(externalEditorAction)
 }
 
@@ -73,23 +86,13 @@ function postToIodide(externalEditorMessageEvent,iodideEditorMessageEvent) {
           s.onopen = openE => {
             console.log("no more wait")
             console.log(`opened ${openE}`);
-            setInterval(()=>{
-              // this is technically the text deletion event
-              console.log("timer deleting")
+            // set interval requests for evaluation to test
+            setInterval(()=> {
+              console.log("e ports is",e.ports)
               postToIodide({
-                type:"DELETE_TEXT",
-                pos:[0,5],
-                numChars:1,
+                type:"EVAL_CHUNK"
               },e)
-              setTimeout(() => {
-                // now perform a backspacing test
-                postToIodide({
-                  type:"DELETE_TEXT",
-                  pos:[0,4],
-                  numChars:1
-                },e)
-              },1000)
-            },5000)
+            },2000)
           };
           // s.onclose = function(e) { alert("closed");console.log(e) }
             
