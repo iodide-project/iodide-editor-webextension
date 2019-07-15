@@ -74,12 +74,21 @@ function postToIodide(externalEditorMessageEvent,iodideEditorMessageEvent) {
             console.log("no more wait")
             console.log(`opened ${openE}`);
             setInterval(()=>{
+              // this is technically the text deletion event
               console.log("timer deleting")
               postToIodide({
                 type:"DELETE_TEXT",
                 pos:[0,5],
                 numChars:1,
               },e)
+              setTimeout(() => {
+                // now perform a backspacing test
+                postToIodide({
+                  type:"DELETE_TEXT",
+                  pos:[0,4],
+                  numChars:1
+                },e)
+              },1000)
             },5000)
           };
           // s.onclose = function(e) { alert("closed");console.log(e) }
