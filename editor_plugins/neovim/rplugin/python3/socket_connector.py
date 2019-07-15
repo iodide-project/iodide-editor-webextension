@@ -46,6 +46,9 @@ class TestPlugin(object):
         msg_object = {"text":"\n".join(self.nvim.current.buffer[:])}
         all_connections[-1].sm(json.dumps(msg_object))
 
+    @pynvim.command('CloseComm', nargs='*', range='')
+    def close_comm(self,args,range):
+        self.server.close()
 
     @pynvim.command('StartComm', nargs='*', range='')
     def start_comm(self,args,range):
@@ -66,6 +69,10 @@ class TestPlugin(object):
             return None
         ## grab the last character created
         cursor_position = self.nvim.current.window.cursor
+        line = self.nvim.current.buffer[cursor_position[0]-1]
+        ## if we have a newline there's nothing new to send yet
+        if not line:
+            return
         character_entered = self.nvim.current.buffer[cursor_position[0]-1][cursor_position[1]-1] ## cursor position's first argument is 1 index based, must go down by one for the active line
         ## the second index is zero based, but the cursor col will have just increased by 1 when the text changes
         ## need to decrease the line cursor position for iodide's translation
