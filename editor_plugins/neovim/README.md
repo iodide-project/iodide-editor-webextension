@@ -5,6 +5,9 @@
 * pip install [dpallot websocket library](https://github.com/dpallot/simple-websocket-server/blob/master/SimpleWebSocketServer/SimpleWebSocketServer.py)
     * ```pip install SimpleWebSocketServer```
 
+### Development Notes
+
+If the repository has been cloned, nvim can be started from this directory with the ```nvim -u init.vim```, and then the ```:UpdateRemotePlugins``` to follow
 
 ### Plugin manager
 
