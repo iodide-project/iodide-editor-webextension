@@ -50,9 +50,18 @@ class TestPlugin(object):
     def close_comm(self,args,range):
         self.server.close()
 
+    @pynvim.command('EvalRequest',nargs='*',range='')
+    def eval_req(self,args,range):
+        msg_object = {"type":"EVAL_CHUNK"}
+        all_connections[-1].sm(json.dumps(msg_object))
+
+
     @pynvim.command('StartComm', nargs='*', range='')
     def start_comm(self,args,range):
         self.com_clear =True
+        ## register the keyboard mapping to send requests to the web browser 
+        self.nvim.command("nnoremap <C-e> :EvalRequest<CR>")
+
         server = SimpleWebSocketServer('', 9876, SimpleEcho)
         threading.Thread(target=server.serveforever).start()
         ## in background setup timer to send whole buffer to iodide every 5 seconds
