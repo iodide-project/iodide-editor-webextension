@@ -87,12 +87,6 @@ function postToIodide(externalEditorMessageEvent,iodideEditorMessageEvent) {
             console.log("no more wait")
             console.log(`opened ${openE}`);
             // set interval requests for evaluation to test
-            setInterval(()=> {
-              console.log("e ports is",e.ports)
-              postToIodide({
-                type:"EVAL_CHUNK"
-              },e)
-            },2000)
           };
           // s.onclose = function(e) { alert("closed");console.log(e) }
             
