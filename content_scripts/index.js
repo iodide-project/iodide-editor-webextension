@@ -3,6 +3,7 @@
 
 let insertText = (text,cursorPos) => {
   // msgdata becomes text here
+  console.log("newline caught? ",text)
     return JSON.stringify({
         exMessageType:"INSERT_TEXT",
         cursorPosition:cursorPos,
@@ -86,13 +87,17 @@ function postToIodide(externalEditorMessageEvent,iodideEditorMessageEvent) {
           s.onopen = openE => {
             console.log("no more wait")
             console.log(`opened ${openE}`);
+            s.send("alive")
             // set interval requests for evaluation to test
+            // experiment with sending text back to the external editor
+            setInterval(()=>{console.log("edex");s.send("giving \n text\n back\n")},2000)
           };
           // s.onclose = function(e) { alert("closed");console.log(e) }
             
         // when extension socket receives a message from the editor plugin's end of the socket just automatically pass into the message channel 
             // to send it along to iodide's editor
           s.onmessage = messageEvent => {
+            console.log(messageEvent.data)
             // have to parse the original messageEvent.data object for the plugin message type
             let pluginMessage = JSON.parse(messageEvent.data)
             // occasionally try to remove a letter

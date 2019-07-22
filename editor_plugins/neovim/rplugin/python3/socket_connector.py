@@ -6,11 +6,19 @@ import time
 import datetime
 from SimpleWebSocketServer import SimpleWebSocketServer, WebSocket
 
+all_messages= ""
 all_connections =[]
+nvims = []
 class SimpleEcho(WebSocket):
+    def update(self):
+        nvims[0].buffers[0][:] = self.data.split("\n")
     def handleMessage(self):
-        # echo message back to client
-        self.sendMessage(self.data)
+        if len(nvims) >0:
+            self.sendMessage("working")
+            nvims[0].async_call(self.update)
+        else:
+            self.sendMessage("working---?")
+
     def sm(self,message):
         self.sendMessage(message)
     def handleConnected(self):
@@ -64,32 +72,13 @@ class TestPlugin(object):
 
         ## register to receive buffer change events
         ## setup the server
+        nvims.append(self.nvim)
         server = SimpleWebSocketServer('', 9876, SimpleEcho)
         threading.Thread(target=server.serveforever).start()
         ## in background setup timer to send whole buffer to iodide every 5 seconds
         self.server = server
         ## begin the next message checker
-        ## might have to be in async_call?
-        self.keep_checking = True
-        threading.Thread(target=self.check_messages).start()
-
-    def set_listen(self):
-        self.nvim.request("nvim_buf_attach",1,True,{})
-
-    def next_message(self):
-        response = self.nvim.next_message() 
-        self.nvim.out_write(response +"\n")
-        return response
-
-    def check_messages(self):
-        self.nvim.async_call(self.set_list)
-        while True:
-            ## will block
-            if self.keep_checking:
-                response = self.nvim.async_call(self.next_message)
-                self.nvim.async_call(self.send_whole_document)
-
-            
+        ## might have to be in async_call? 
 
 
     @pynvim.autocmd('InsertEnter', pattern='*', eval='expand("<afile>")', sync=True)
