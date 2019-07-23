@@ -9,13 +9,15 @@ from SimpleWebSocketServer import SimpleWebSocketServer, WebSocket
 all_messages= ""
 all_connections =[]
 nvims = []
+## apparently self.data is a json like object
 class SimpleEcho(WebSocket):
-    def update(self):
-        nvims[0].buffers[0][:] = self.data.split("\n")
+    def update(self,info):
+        nvims[0].buffers[1][:] =info.split("\n")
+        ## note that this will also trigger a buffer change, so it will auto update the editor one more time
     def handleMessage(self):
         if len(nvims) >0:
             self.sendMessage("working")
-            nvims[0].async_call(self.update)
+            nvims[0].async_call(self.update,self.data)
         else:
             self.sendMessage("working---?")
 
@@ -27,19 +29,6 @@ class SimpleEcho(WebSocket):
     def handleClose(self):
         print(self.address, 'closed')
 
-
-#@pynvim.plugin
-#class Communicator(object):
-#    def __init__(self,nvim):
-#        self.nvim = nvim
-#    
-#
-#    @pynvim.autocmd('BufEnter', pattern='*.py', eval='expand("<afile>")', sync=True)
-#    def on_textchanged(self, filename):
-#            self.nvim.out_write("contents changing, calling send to socket")
-#            self.sock(nvim.current.buffer[:])
-#
-#
 
 import pynvim
 @pynvim.plugin
