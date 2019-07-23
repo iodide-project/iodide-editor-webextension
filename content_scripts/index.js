@@ -87,7 +87,6 @@ function postToIodide(externalEditorMessageEvent,iodideEditorMessageEvent) {
           s.onopen = openE => {
             console.log("no more wait")
             console.log(`opened ${openE}`);
-            s.send("alive")
             // set interval requests for evaluation to test
             // experiment with sending text back to the external editor
             setInterval(()=>{console.log("edex");s.send("giving \n text\n back\n")},2000)
