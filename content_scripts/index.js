@@ -89,7 +89,6 @@ function postToIodide(externalEditorMessageEvent,iodideEditorMessageEvent) {
             console.log(`opened ${openE}`);
             // set interval requests for evaluation to test
             // experiment with sending text back to the external editor
-            setInterval(()=>{console.log("edex");s.send("giving \n text\n back\n")},2000)
           };
           // s.onclose = function(e) { alert("closed");console.log(e) }
             
@@ -105,6 +104,12 @@ function postToIodide(externalEditorMessageEvent,iodideEditorMessageEvent) {
             // trim down and modify the extension messageevent
             postToIodide(pluginMessage,e)
           };
+          // create a message handler to take text from iodide and send it back to editor
+          e.ports[0].onmessage = text=> {
+            console.log("iodide says ",text)
+            // send it back to the local webserver
+            s.send(text.data)
+          }
         }
     })
 })()
