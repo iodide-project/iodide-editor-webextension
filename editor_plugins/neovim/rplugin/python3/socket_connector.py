@@ -16,11 +16,7 @@ class SimpleEcho(WebSocket):
         ## note that this will also trigger a buffer change, so it will auto update the editor one more time
     def handleMessage(self):
         if len(nvims) >0:
-            self.sendMessage("working")
             nvims[0].async_call(self.update,self.data)
-        else:
-            self.sendMessage("working---?")
-
     def sm(self,message):
         self.sendMessage(message)
     def handleConnected(self):
@@ -69,24 +65,12 @@ class TestPlugin(object):
         ## begin the next message checker
         ## might have to be in async_call? 
 
-
-    @pynvim.autocmd('InsertEnter', pattern='*', eval='expand("<afile>")', sync=True)
-    def enter_insert(self,filename):
-        if self.com_clear:
-            self.send_whole_document()
-
     @pynvim.autocmd('InsertLeave', pattern='*', eval='expand("<afile>")', sync=True)
     def exit_insert(self,filename):
         if self.com_clear:
             self.send_whole_document()
 
 
-    ## changes that should be like big blocks of lines getting put in and deleted
-    @pynvim.autocmd('TextChanged', pattern='*', eval='expand("<afile>")', sync=True)
-    def on_lines_shift(self,filename):
-        ## if we don't have connection yet
-        if self.com_clear:
-            self.send_whole_document()
 
 
     @pynvim.autocmd('TextChangedI', pattern='*', eval='expand("<afile>")', sync=True)
@@ -95,12 +79,17 @@ class TestPlugin(object):
             return None
         ## grab the last character created
         cursor_position = self.nvim.current.window.cursor
+        self.nvim.out_write("{}\n".format(cursor_position))
         line = self.nvim.current.buffer[cursor_position[0]-1]
+        self.nvim.out_write("{}line\n".format(line))
+        if line == "":
+            ## send a newline character to iodide
+            msg_object = {"pos":[cursor_position[0]-1,cursor_position[1]],"type":"INSERT_TEXT","text":"\n"}
+        else :
         ## if we have a newline there's nothing new to send yet
-        if not line:
-            return
-        character_entered = self.nvim.current.buffer[cursor_position[0]-1][cursor_position[1]-1] ## cursor position's first argument is 1 index based, must go down by one for the active line
-        ## the second index is zero based, but the cursor col will have just increased by 1 when the text changes
-        ## need to decrease the line cursor position for iodide's translation
-        msg_object = {"pos":[cursor_position[0]-1,cursor_position[1]-1],"type":"INSERT_TEXT","text":line}
+            character_entered = self.nvim.current.buffer[cursor_position[0]-1][cursor_position[1]-1] ## cursor position's first argument is 1 index based, must go down by one for the active line
+            ## the second index is zero based, but the cursor col will have just increased by 1 when the text changes
+            ## need to decrease the line cursor position for iodide's translation
+            msg_object = {"pos":[cursor_position[0]-1,cursor_position[1]-1],"type":"INSERT_TEXT","text":character_entered}
+            self.nvim.out_write("text {}\n".format(character_entered))
         all_connections[-1].sm(json.dumps(msg_object))
