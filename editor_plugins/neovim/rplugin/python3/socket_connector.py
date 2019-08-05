@@ -32,6 +32,7 @@ class TestPlugin(object):
 
     def __init__(self, nvim):
         self.nvim = nvim
+        self.prev_pos= [0,0]
         self.com_clear=False ## specifies whether the user has activated communication
 
     def send_whole_document(self):
@@ -65,6 +66,11 @@ class TestPlugin(object):
         ## begin the next message checker
         ## might have to be in async_call? 
 
+    
+    @pynvim.autocmd('InsertEnter', pattern='*', eval='expand("<afile>")', sync=True)
+    def enter_insert(self,filename):
+        self.prev_pos = self.nvim.current.window.cursor
+        self.prev_pos[1]+=1 ## the normal cursor position is used which isn't correct
     @pynvim.autocmd('InsertLeave', pattern='*', eval='expand("<afile>")', sync=True)
     def exit_insert(self,filename):
         if self.com_clear:
@@ -79,7 +85,18 @@ class TestPlugin(object):
             return None
         ## grab the last character created
         cursor_position = self.nvim.current.window.cursor
+        ## figure out if text changed from a backspace or deletion
+        ## deletion is if the text changes but the col position stays the same
+
         self.nvim.out_write("{}\n".format(cursor_position))
+        self.nvim.out_write("{}\n".format(self.col_pos))
+        if self.prev_pos[1] > cursor_position[1] and self.prev_pos[0] == cursor_position[0] :
+            self.prev_pos = cursor_position
+            ## emit a deletion event
+            msg_object = {"pos":[cursor_position[0]-1,cursor_position[1]+1],"type":"DELETE_TEXT","numCharsToDelete":1}
+            all_connections[-1].sm(json.dumps(msg_object))
+            return 
+        self.col_pos = cursor_position[1]
         line = self.nvim.current.buffer[cursor_position[0]-1]
         self.nvim.out_write("{}line\n".format(line))
         if line == "":
