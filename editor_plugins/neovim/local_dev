@@ -31,17 +31,8 @@ import pynvim
 class TestPlugin(object):
     def __init__(self, nvim):
         self.nvim = nvim
-        self.prev_pos= [0,0]
-        self.com_clear=False ## specifies whether the user has activated communication
-    def send_whole_document(self):
-        ## the default behavior without a specific tyep is to replace the iomd_content
-        msg_object = {"text":"\n".join(self.nvim.current.buffer[:])}
-        all_connections[-1].sm(json.dumps(msg_object))
     def close_comm(self):
         self.server.close()
-    def eval_req(self):
-        msg_object = {"type":"EVAL_CHUNK"}
-        all_connections[-1].sm(json.dumps(msg_object))
     def start_comm(self):
         self.com_clear =True
         ## register the keyboard mapping to send requests to the web browser 
@@ -55,48 +46,63 @@ class TestPlugin(object):
         ## in background setup timer to send whole buffer to iodide every 5 seconds
         ## begin the next message checker
         ## might have to be in async_call? 
-    def enter_insert(self):
-        self.prev_pos = self.nvim.current.window.cursor
-        self.prev_pos[1]+=1 ## the normal cursor position is used which isn't correct
-        print(self.prev_pos)
-    def exit_insert(self):
-        if self.com_clear:
-            self.send_whole_document()
+
+d = {}
+
+class Handler(object):
+  def __init__(self,nvim):
+    self.nvim = nvim
+    self.prev_pos= [0,0]
+    self.com_clear=False ## specifies whether the user has activated communication
+  def send_whole_document(self):
+      ## the default behavior without a specific tyep is to replace the iomd_content
+      msg_object = {"text":"\n".join(self.nvim.current.buffer[:])}
+      all_connections[-1].sm(json.dumps(msg_object))
+  def eval_req(self):
+      msg_object = {"type":"EVAL_CHUNK"}
+      all_connections[-1].sm(json.dumps(msg_object))
+  def enter_insert(self):
+      self.prev_pos = self.nvim.current.window.cursor
+      self.prev_pos[1]+=1 ## the normal cursor position is used which isn't correct
+      print(self.prev_pos)
+  def exit_insert(self):
+      self.send_whole_document()
 ## create an autocommand which notifies on texchange
 #
-    def on_text_change(self):
-        if not self.com_clear:
-            return None
-        ## grab the last character created
-        cursor_position = self.nvim.current.window.cursor
-        ## figure out if text changed from a backspace or deletion
-        ## deletion is if the text changes but the col position stays the same
-        print("previous",self.prev_pos,"current",cursor_position)
-        ## delete key
-        if self.prev_pos[1] == cursor_position[1] and self.prev_pos[0] == cursor_position[0] :
-            self.prev_pos = cursor_position
-            msg_object = {"pos":[cursor_position[0]-1,cursor_position[1]+2],"type":"DELETE_TEXT","numCharsToDelete":1}
-            all_connections[-1].sm(json.dumps(msg_object))
-            return 
-        ## backspace
-        if self.prev_pos[1] > cursor_position[1] and self.prev_pos[0] == cursor_position[0] :
-            self.prev_pos = cursor_position
-            ## emit a deletion event
-            msg_object = {"pos":[cursor_position[0]-1,cursor_position[1]+1],"type":"DELETE_TEXT","numCharsToDelete":1}
-            all_connections[-1].sm(json.dumps(msg_object))
-            return 
-        self.prev_pos = cursor_position
-        line = self.nvim.current.buffer[cursor_position[0]-1]
-        if line == "":
-            ## send a newline character to iodide
-            msg_object = {"pos":[cursor_position[0]-1,cursor_position[1]],"type":"INSERT_TEXT","text":"\n"}
-        else :
-        ## if we have a newline there's nothing new to send yet
-            character_entered = self.nvim.current.buffer[cursor_position[0]-1][cursor_position[1]-1] ## cursor position's first argument is 1 index based, must go down by one for the active line
-            ## the second index is zero based, but the cursor col will have just increased by 1 when the text changes
-            ## need to decrease the line cursor position for iodide's translation
-            msg_object = {"pos":[cursor_position[0]-1,cursor_position[1]-1],"type":"INSERT_TEXT","text":character_entered}
-        all_connections[-1].sm(json.dumps(msg_object))
+  def on_text_change(self):
+      ## grab the last character created
+      cursor_position = self.nvim.current.window.cursor
+      ## figure out if text changed from a backspace or deletion
+      ## deletion is if the text changes but the col position stays the same
+      print("previous",self.prev_pos,"current",cursor_position)
+      ## delete key
+      if self.prev_pos[1] == cursor_position[1] and self.prev_pos[0] == cursor_position[0] :
+          print("delete key use")
+          self.prev_pos = cursor_position
+          msg_object = {"pos":[cursor_position[0]-1,cursor_position[1]+2],"type":"DELETE_TEXT","numCharsToDelete":1}
+          all_connections[-1].sm(json.dumps(msg_object))
+          return 
+      ## backspace
+      if self.prev_pos[1] > cursor_position[1] and self.prev_pos[0] == cursor_position[0] :
+          print("backspace use")
+          self.prev_pos = cursor_position
+          ## emit a deletion event
+          msg_object = {"pos":[cursor_position[0]-1,cursor_position[1]+1],"type":"DELETE_TEXT","numCharsToDelete":1}
+          all_connections[-1].sm(json.dumps(msg_object))
+          return 
+      self.prev_pos = cursor_position
+      line = self.nvim.current.buffer[cursor_position[0]-1]
+      if line == "":
+          ## send a newline character to iodide
+          msg_object = {"pos":[cursor_position[0]-1,cursor_position[1]],"type":"INSERT_TEXT","text":"\n"}
+      else :
+      ## if we have a newline there's nothing new to send yet
+          character_entered = self.nvim.current.buffer[cursor_position[0]-1][cursor_position[1]-1] ## cursor position's first argument is 1 index based, must go down by one for the active line
+          ## the second index is zero based, but the cursor col will have just increased by 1 when the text changes
+          ## need to decrease the line cursor position for iodide's translation
+          msg_object = {"pos":[cursor_position[0]-1,cursor_position[1]-1],"type":"INSERT_TEXT","text":character_entered}
+      all_connections[-1].sm(json.dumps(msg_object))
+
 
 
 ## make autocommand
@@ -118,26 +124,21 @@ testplugob = plugs[-1]
 testplugob.start_comm()
 
 ## hook up the other stuff to the loop
+h = Handler(nvim)
 prev = [0,0]
 while True:
   # blocking call which is why we don't have to go to sleep in a while loop
   res = neovim.next_message()
   cursor = neovim.request("nvim_get_current_win").cursor
   if res[1] == "textchange":
-    ## if line has gone up 
-    if cursor[0] > prev[0]:
-      print("added line \\n")
-    elif cursor[1] < prev[1]:
-      print("removed a char")
-    elif cursor[1] == prev[1]:
-      print("deleted a char")
+    h.on_text_change()
     print(cursor)
   if res[1] == "evalreq":
     print("evalreq")
-    testplugob.eval_req()
+    h.eval_req()
   if res[1] == "insertleave":
     print("left")
-    testplugob.send_whole_document()
+    h.send_whole_document()
   prev= cursor
 
 
