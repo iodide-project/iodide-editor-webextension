@@ -90,24 +90,27 @@ class Handler(object):
     self.prev_buffer = current_buffer
     return difference
   def insert_line(self,line,line_num):
-    for i,c in enumerate(line):
-      message_ob = {"type":"INSERT_TEXT","pos":[line_num,i],"text":c}
-      all_connections[-1].sm(json.dumps(message_ob))
+    ## if line is '' then we just created a newline and exited but there's also a good chance this wil get caught on the next actual addition to the line
+    message_ob = {"type":"INSERT_TEXT","pos":[line_num,0],"text":line}
+    print(message_ob)
+    all_connections[-1].sm(json.dumps(message_ob))
   def delete_line(self,line,line_num):
     for i,c in enumerate(line):
       message_ob = {"pos":[line_num,1],"type":"DELETE_TEXT","numCharsToDelete":1}
+      print(message_ob)
       all_connections[-1].sm(json.dumps(message_ob))
   def dif_digest(self,dif):
     #iterate over the dif for lines that are - call send delete line
     # for + send insert line 
     for line_ind,line in enumerate(dif):
       ## skip the first two chars of the string because they aren't the actual text
+      print(line_ind,line)
       if line[0] == "-":
         print("delete line",line)
         self.delete_line(line[2:],line_ind)
       if line[0] == "+":
         print("insert line",line)
-        self.insert_line(line[2:],line_ind)
+        self.insert_line(line[2:],line_ind-1) ## the line_ind is always one higher than its supposed to be for the inserted details from the dif, just the way the compare list is created
   def enter_insert(self):
     ## compare current with previous buffer and print it
     dif = self.get_diff()
