@@ -49,6 +49,26 @@ class TestPlugin(object):
 
 d = {}
 
+## make autocommand
+neovim.command(":au TextChangedI * :call rpcnotify({},'textchange')".format(neovim.channel_id))
+neovim.command(":au InsertEnter * :call rpcnotify({},'insertenter')".format(neovim.channel_id))
+neovim.command(":au CursorMoved * :call rpcnotify({},'cursortrack')".format(neovim.channel_id))
+neovim.command(":au InsertLeave * :call rpcnotify({},'insertleave')".format(neovim.channel_id))
+
+
+plugs = []
+
+testplugob.close_comm()
+#make a test object
+
+plugs.append( TestPlugin(neovim))
+
+# start the communicator
+#
+testplugob = plugs[-1]
+testplugob.start_comm()
+
+
 class Handler(object):
   def __init__(self,nvim):
     self.nvim = nvim
@@ -61,10 +81,9 @@ class Handler(object):
   def eval_req(self):
       msg_object = {"type":"EVAL_CHUNK"}
       all_connections[-1].sm(json.dumps(msg_object))
-  def enter_insert(self):
+  def cursor_track(self):
       self.prev_pos = self.nvim.current.window.cursor
-      self.prev_pos[1]+=1 ## the normal cursor position is used which isn't correct
-      print(self.prev_pos)
+      print("cursor moved",self.prev_pos)
   def exit_insert(self):
       self.send_whole_document()
 ## create an autocommand which notifies on texchange
@@ -76,7 +95,7 @@ class Handler(object):
       ## deletion is if the text changes but the col position stays the same
       print("previous",self.prev_pos,"current",cursor_position)
       ## delete key
-      if self.prev_pos[1] == cursor_position[1] and self.prev_pos[0] == cursor_position[0] :
+      if self.prev_pos[1] == cursor_position[1] and self.prev_pos[0] == cursor_position[0]:
           print("delete key use")
           self.prev_pos = cursor_position
           msg_object = {"pos":[cursor_position[0]-1,cursor_position[1]+2],"type":"DELETE_TEXT","numCharsToDelete":1}
@@ -104,25 +123,6 @@ class Handler(object):
       all_connections[-1].sm(json.dumps(msg_object))
 
 
-
-## make autocommand
-neovim.command(":au TextChangedI * :call rpcnotify({},'textchange')".format(neovim.channel_id))
-neovim.command(":au InsertEnter * :call rpcnotify({},'insertenter')".format(neovim.channel_id))
-neovim.command(":au InsertLeave * :call rpcnotify({},'insertleave')".format(neovim.channel_id))
-
-
-plugs = []
-
-testplugob.close_comm()
-#make a test object
-
-plugs.append( TestPlugin(neovim))
-
-# start the communicator
-#
-testplugob = plugs[-1]
-testplugob.start_comm()
-
 ## hook up the other stuff to the loop
 h = Handler(nvim)
 prev = [0,0]
@@ -130,6 +130,8 @@ while True:
   # blocking call which is why we don't have to go to sleep in a while loop
   res = neovim.next_message()
   cursor = neovim.request("nvim_get_current_win").cursor
+  if res[1] == "cursortrack":
+    h.cursor_track()
   if res[1] == "textchange":
     h.on_text_change()
     print(cursor)
