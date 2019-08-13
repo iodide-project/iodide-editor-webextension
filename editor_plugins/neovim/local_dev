@@ -12,9 +12,11 @@ nvims = []
 ## apparently self.data is a json like object
 class SimpleEcho(WebSocket):
     def update(self,info):
-        nvims[0].buffers[1][:] =info.split("\n")
+        print("info is",info)
+        nvims[-1].buffers[1][:] =info.split("\n")
         ## note that this will also trigger a buffer change, so it will auto update the editor one more time
     def handleMessage(self):
+        print("handling iodide message",self.data)
         if len(nvims) >0:
             nvims[0].async_call(self.update,self.data)
     def sm(self,message):
@@ -47,7 +49,6 @@ class TestPlugin(object):
         ## begin the next message checker
         ## might have to be in async_call? 
 
-d = {}
 
 ## make autocommand
 neovim.command(":au InsertEnter * :call rpcnotify({},'insertenter')".format(neovim.channel_id))
@@ -85,8 +86,12 @@ class Handler(object):
     all_connections[-1].sm(json.dumps(msg_object))
   def get_diff(self):
     current_buffer = self.nvim.current.buffer[:]
-    difference = list(d.compare(self.prev_buffer,current_buffer))
+    difference = list(self.d.compare(self.prev_buffer,current_buffer))
+    print("previous --{}--".format(self.prev_buffer))
+    print("current --{}--".format(current_buffer))
     pprint(difference)
+    ## toss out the question mark lines
+    difference = [d for d in difference if d[0] != "?"]
     self.prev_buffer = current_buffer
     return difference
   def insert_line(self,line,line_num):
@@ -104,6 +109,8 @@ class Handler(object):
     for line_ind,line in enumerate(dif):
       ## skip the first two chars of the string because they aren't the actual text
       print(line_ind,line)
+      if line == "":
+        continue
       if line[0] == "-":
         print("delete line",line)
         self.delete_line(line[2:],line_ind)
@@ -132,6 +139,9 @@ prev = [0,0]
 while True:
   # blocking call which is why we don't have to go to sleep in a while loop
   res = neovim.next_message()
+  print("res is ",res)
+  if res == None:
+    continue
   cursor = neovim.request("nvim_get_current_win").cursor
   if res[1] == "insertenter":
     h.enter_insert()
