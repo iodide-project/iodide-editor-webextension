@@ -95,7 +95,6 @@ class Handler(object):
     print(message_ob)
     all_connections[-1].sm(json.dumps(message_ob))
   def delete_line(self,line,line_num):
-    for i,c in enumerate(line):
       message_ob = {"pos":[line_num,1],"type":"DELETE_TEXT","numCharsToDelete":1}
       print(message_ob)
       all_connections[-1].sm(json.dumps(message_ob))
@@ -110,11 +109,18 @@ class Handler(object):
         self.delete_line(line[2:],line_ind)
       if line[0] == "+":
         print("insert line",line)
-        self.insert_line(line[2:],line_ind-1) ## the line_ind is always one higher than its supposed to be for the inserted details from the dif, just the way the compare list is created
+        # check if this is a line modification or creation
+        if line_ind != 0 and dif[line_ind-1][0] == "-":
+          self.insert_line(line[2:],line_ind-1) ## the line_ind is always one higher than its supposed to be for the inserted details from the dif when teh line has been modified
+        else:
+          self.insert_line(line[2:],line_ind)
   def enter_insert(self):
     ## compare current with previous buffer and print it
+    print("getting enter dif")
     dif = self.get_diff()
+    self.dif_digest(dif)
   def exit_insert(self):
+    print("getting exit dif")
     dif = self.get_diff()
     self.dif_digest(dif)
 ## create an autocommand which notifies on texchange
