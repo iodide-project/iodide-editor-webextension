@@ -51,7 +51,7 @@ function postToIodide(externalEditorMessageEvent,iodideEditorMessageEvent) {
         break;
       case "DELETE_TEXT": 
         console.log("using delete text")
-        externalEditorAction = deletionEvent(externalEditorMessageEvent.pos,externalEditorMessageEvent.numCharsToDelete)
+        externalEditorAction = deletionEvent(externalEditorMessageEvent.pos,externalEditorMessageEvent.numChars)
         console.log("deletion to iodide is ",externalEditorAction)
         console.log("missing e? ",iodideEditorMessageEvent.ports)
         break;
