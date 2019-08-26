@@ -46,10 +46,12 @@ function activate(context) {
 				type: "INSERT_TEXT",
 				text: charChange
 			}
+			if (sender){
+				sender.send(JSON.stringify(msgOb))
+			}
+			
 		}
-		if (sender) {
-			sender.send(e.contentChanges[0].text)
-		}
+		
 	})
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with  registerCommand
