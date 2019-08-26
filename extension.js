@@ -11,10 +11,10 @@ const vscode = require('vscode');
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
-	let ws = new WebSocket.Server({port:8080})
+	let ws = new WebSocket.Server({ port: 9876 })
 	let sender
-	ws.on("connection",(ws)=> {
-		ws.on("message",(msg)=> {
+	ws.on("connection", (ws) => {
+		ws.on("message", (msg) => {
 			console.log("got message")
 		})
 		sender = ws
@@ -22,11 +22,32 @@ function activate(context) {
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "io-ex-ed" is tooo active! run!');
-	vscode.workspace.onDidChangeTextDocument((e)=> {
-		console.log("line",e.contentChanges[0].range.start.line)
-		console.log("column",e.contentChanges[0].range.start.character)
-		console.log("char ", e.contentChanges[0].text)
-		if (sender){
+	vscode.workspace.onDidChangeTextDocument((e) => {
+		let charChange = e.contentChanges[0].text
+		let col = e.contentChanges[0].range.start.character
+		let line = e.contentChanges[0].range.start.line
+		console.log("line", line)
+		console.log("column", col)
+		console.log("char ", charChange)
+		// calculate the index of change as single number instead of line and col, 
+		// makes insertion in iodide easier, fewer corner cases
+		// get the document contents, count columns in lines above current one, then add the column count, perhaps need to include the newline chars too
+		let flatInd = e.document.getText().split("\n").slice(0, line).reduce((acc, cur) => {
+			acc += cur + "\n"
+			return acc
+		}, "").length + col
+		let text = e.document.getText().slice(0, flatInd) + "-" + charChange + "-" + e.document.getText().slice(flatInd + 1)
+		console.log("inserted", text)
+		// construct an object to send to the extension
+		let msgOb
+		if (charChange !== "") {
+			msgOb = {
+				pos: [line, col, flatInd],
+				type: "INSERT_TEXT",
+				text: charChange
+			}
+		}
+		if (sender) {
 			sender.send(e.contentChanges[0].text)
 		}
 	})
@@ -45,7 +66,7 @@ function activate(context) {
 exports.activate = activate;
 
 // this method is called when your extension is deactivated
-function deactivate() {}
+function deactivate() { }
 
 module.exports = {
 	activate,
