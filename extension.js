@@ -21,7 +21,12 @@ function activate(context) {
 	})
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
+  let prevPos = [0,0]
 	console.log('Congratulations, your extension "io-ex-ed" is tooo active! run!');
+	vscode.window.onDidChangeTextEditorSelection((e)=> {
+    prevPos = [e.selections[0].start.line,e.selections[0].start.character]
+    console.log("setting pos ",prevPos)
+	})
 	vscode.workspace.onDidChangeTextDocument((e) => {
 		let charChange = e.contentChanges[0].text
 		let col = e.contentChanges[0].range.start.character
@@ -50,8 +55,30 @@ function activate(context) {
 				sender.send(JSON.stringify(msgOb))
 			}
 			
-		}
+		} else {
+      if (col === prevPos[1]) {
+        // this is a delete key event
+        // send the exact flatInd if its backspace pretend that we moved one char back and then performed a deletion
+		console.log("deletion",col,prevPos);
 		
+		msgOb = {
+          type:"DELETE_TEXT",
+          pos:[line,col,flatInd],
+          numChars:1,
+        }
+      } else {
+        // this is a backspace key event
+		console.log("backspace",col,prevPos);
+		msgOb = {
+          type:"DELETE_TEXT",
+          pos:[line,col,flatInd],
+          numChars:1,
+        }
+      }
+      if (sender) {
+        sender.send(JSON.stringify(msgOb))
+      }
+    }
 	})
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with  registerCommand
