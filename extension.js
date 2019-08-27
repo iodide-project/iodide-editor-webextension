@@ -83,6 +83,14 @@ function activate(context) {
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
+  vscode.commands.registerCommand('extension.executeChunk', function() {
+	console.log("executing")
+	if (sender){
+		sender.send(JSON.stringify({
+			type:"EVAL_CHUNK"
+		}))
+	}
+  })
 	let disposable = vscode.commands.registerCommand('extension.helloWorld', function () {
 		// The code you place here will be executed every time your command is executed
 
