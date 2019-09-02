@@ -11,12 +11,13 @@ const vscode = require('vscode');
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
-	
+
 
 
 	let ws = new WebSocket.Server({ port: 9876 })
 	let sender
-	let filling = ""
+	let filling
+	let ioChangeCount = 0
 	ws.on("connection", (ws) => {
 		ws.on("message", (msg) => {
 			console.log("got message", msg)
@@ -27,10 +28,12 @@ function activate(context) {
 				let selection = editor.selection;
 
 				// Get the word within the selection
+				// wait half sec for the last editor can't catch all changes
 
 				editor.edit(editBuilder => {
-					editBuilder.replace(new vscode.Range(0, 0, document.lineCount, 0), `${msg}`);
-					filling = `${msg}`
+						editBuilder.replace(new vscode.Range(0, 0, document.lineCount, 0), `${msg}`);
+						filling = Date.now()
+						
 				});
 			}
 		})
@@ -46,9 +49,11 @@ function activate(context) {
 	})
 	vscode.workspace.onDidChangeTextDocument((e) => {
 		console.log(e)
-		
+
 		let text = e.contentChanges[0].text
-		if (filling == text) {
+		if (Date.now() - filling <500) {
+			// 
+			console.log(filling,"filling in")
 			return
 		}
 		let col = e.contentChanges[0].range.start.character
