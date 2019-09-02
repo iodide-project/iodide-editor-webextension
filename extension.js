@@ -11,25 +11,46 @@ const vscode = require('vscode');
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
+	
+
+
 	let ws = new WebSocket.Server({ port: 9876 })
 	let sender
+	let filling = ""
 	ws.on("connection", (ws) => {
 		ws.on("message", (msg) => {
-			console.log("got message")
+			console.log("got message", msg)
+			let editor = vscode.window.activeTextEditor;
+
+			if (editor) {
+				let document = editor.document;
+				let selection = editor.selection;
+
+				// Get the word within the selection
+
+				editor.edit(editBuilder => {
+					editBuilder.replace(new vscode.Range(0, 0, document.lineCount, 0), `${msg}`);
+					filling = `${msg}`
+				});
+			}
 		})
 		sender = ws
 	})
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
-  let prevPos = [0,0]
+	let prevPos = [0, 0]
 	console.log('Congratulations, your extension "io-ex-ed" is tooo active! run!');
-	vscode.window.onDidChangeTextEditorSelection((e)=> {
-    prevPos = [e.selections[0].start.line,e.selections[0].start.character]
-    console.log("setting pos ",prevPos)
+	vscode.window.onDidChangeTextEditorSelection((e) => {
+		prevPos = [e.selections[0].start.line, e.selections[0].start.character]
+		console.log("setting pos ", prevPos)
 	})
 	vscode.workspace.onDidChangeTextDocument((e) => {
 		console.log(e)
+		
 		let text = e.contentChanges[0].text
+		if (filling == text) {
+			return
+		}
 		let col = e.contentChanges[0].range.start.character
 		let line = e.contentChanges[0].range.start.line
 		console.log("line", line)
@@ -37,42 +58,42 @@ function activate(context) {
 		// calculate the index of change as single number instead of line and col, 
 		// makes insertion in iodide easier, fewer corner cases
 		// get the document contents, count columns in lines above current one, then add the column count, perhaps need to include the newline chars too
-    let flatInd = e.contentChanges[0].rangeOffset
-    let msgObj
-    // emit all the necessary deletion events
-    let charsRemoved = e.contentChanges[0].rangeLength
-    for (let i = 0; i < charsRemoved;i++) {
-        msgObj = {
-          type:"DELETE_TEXT",
-          pos:[line,col,flatInd],
-          numChars:1,
-        }
-        if (sender) {
-          sender.send(JSON.stringify(msgObj))
-        }
-    }
-    for (let i = 0; i < text.length; i++) {
+		let flatInd = e.contentChanges[0].rangeOffset
+		let msgObj
+		// emit all the necessary deletion events
+		let charsRemoved = e.contentChanges[0].rangeLength
+		for (let i = 0; i < charsRemoved; i++) {
+			msgObj = {
+				type: "DELETE_TEXT",
+				pos: [line, col, flatInd],
+				numChars: 1,
+			}
+			if (sender) {
+				sender.send(JSON.stringify(msgObj))
+			}
+		}
+		for (let i = 0; i < text.length; i++) {
 			msgObj = {
 				pos: [line, col, flatInd + i],
 				type: "INSERT_TEXT",
 				text: text[i]
 			}
-			if (sender){
+			if (sender) {
 				sender.send(JSON.stringify(msgObj))
 			}
-    }
+		}
 	})
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
-  vscode.commands.registerCommand('extension.executeChunk', function() {
-	console.log("executing")
-	if (sender){
-		sender.send(JSON.stringify({
-			type:"EVAL_CHUNK"
-		}))
-	}
-  })
+	vscode.commands.registerCommand('extension.executeChunk', function () {
+		console.log("executing")
+		if (sender) {
+			sender.send(JSON.stringify({
+				type: "EVAL_CHUNK"
+			}))
+		}
+	})
 	let disposable = vscode.commands.registerCommand('extension.helloWorld', function () {
 		// The code you place here will be executed every time your command is executed
 
