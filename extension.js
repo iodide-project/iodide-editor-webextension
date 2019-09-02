@@ -28,56 +28,38 @@ function activate(context) {
     console.log("setting pos ",prevPos)
 	})
 	vscode.workspace.onDidChangeTextDocument((e) => {
-		let charChange = e.contentChanges[0].text
+		console.log(e)
+		let text = e.contentChanges[0].text
 		let col = e.contentChanges[0].range.start.character
 		let line = e.contentChanges[0].range.start.line
 		console.log("line", line)
 		console.log("column", col)
-		console.log("char ", charChange)
 		// calculate the index of change as single number instead of line and col, 
 		// makes insertion in iodide easier, fewer corner cases
 		// get the document contents, count columns in lines above current one, then add the column count, perhaps need to include the newline chars too
-		let flatInd = e.document.getText().split("\n").slice(0, line).reduce((acc, cur) => {
-			acc += cur + "\n"
-			return acc
-		}, "").length + col
-		let text = e.document.getText().slice(0, flatInd) + "-" + charChange + "-" + e.document.getText().slice(flatInd + 1)
-		console.log("inserted", text)
-		// construct an object to send to the extension
-		let msgOb
-		if (charChange !== "") {
-			msgOb = {
-				pos: [line, col, flatInd],
+    let flatInd = e.contentChanges[0].rangeOffset
+    let msgObj
+    // emit all the necessary deletion events
+    let charsRemoved = e.contentChanges[0].rangeLength
+    for (let i = 0; i < charsRemoved;i++) {
+        msgObj = {
+          type:"DELETE_TEXT",
+          pos:[line,col,flatInd],
+          numChars:1,
+        }
+        if (sender) {
+          sender.send(JSON.stringify(msgObj))
+        }
+    }
+    for (let i = 0; i < text.length; i++) {
+			msgObj = {
+				pos: [line, col, flatInd + i],
 				type: "INSERT_TEXT",
-				text: charChange
+				text: text[i]
 			}
 			if (sender){
-				sender.send(JSON.stringify(msgOb))
+				sender.send(JSON.stringify(msgObj))
 			}
-			
-		} else {
-      if (col === prevPos[1]) {
-        // this is a delete key event
-        // send the exact flatInd if its backspace pretend that we moved one char back and then performed a deletion
-		console.log("deletion",col,prevPos);
-		
-		msgOb = {
-          type:"DELETE_TEXT",
-          pos:[line,col,flatInd],
-          numChars:1,
-        }
-      } else {
-        // this is a backspace key event
-		console.log("backspace",col,prevPos);
-		msgOb = {
-          type:"DELETE_TEXT",
-          pos:[line,col,flatInd],
-          numChars:1,
-        }
-      }
-      if (sender) {
-        sender.send(JSON.stringify(msgOb))
-      }
     }
 	})
 	// The command has been defined in the package.json file
