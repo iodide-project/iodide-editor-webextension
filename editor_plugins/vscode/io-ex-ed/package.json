@@ -13,7 +13,12 @@
 		"onCommand:extension.helloWorld"
 	],
 	"main": "./extension.js",
-	"contributes": {
+  "contributes": {
+    "keybindings":[{
+      "command":"extension.executeChunk",
+      "key":"ctrl+e",
+      "mac":"cmd+e"
+    }],
 		"commands": [
 			{
 				"command": "extension.helloWorld",
