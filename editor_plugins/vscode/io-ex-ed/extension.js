@@ -77,16 +77,19 @@ function activate(context) {
 				sender.send(JSON.stringify(msgObj))
 			}
 		}
-		for (let i = 0; i < text.length; i++) {
-			msgObj = {
-				pos: [line, col, flatInd + i],
-				type: "INSERT_TEXT",
-				text: text[i]
-			}
-			if (sender) {
-				sender.send(JSON.stringify(msgObj))
-			}
+		msgObj = {
+			pos: [line, col],
+			type: "INSERT_TEXT",
+			rangeInfo:{
+				len:e.contentChanges[0].rangeLength,
+				offset:e.contentChanges[0].rangeOffset // when is this multiarrayed?
+			},
+			text,
 		}
+		if (sender) {
+			sender.send(JSON.stringify(msgObj))
+		}
+	
 	})
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with  registerCommand
@@ -99,11 +102,11 @@ function activate(context) {
 			}))
 		}
 	})
-	let disposable = vscode.commands.registerCommand('extension.helloWorld', function () {
+	let disposable = vscode.commands.registerCommand('extension.connectIodide', function () {
 		// The code you place here will be executed every time your command is executed
 
 		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World! this all done is a now active program');
+		vscode.window.showInformationMessage('you have connected to iodide');
 	});
 
 	context.subscriptions.push(disposable);
