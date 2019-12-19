@@ -1,13 +1,13 @@
 
 // the different types of messages to send along to iodide. Based on what the editor plugin says the user is up to we would use one or another of these
 
-let insertText = (text,cursorPos) => {
+let insertText = (insertionObject) => {
   // msgdata becomes text here
-  console.log("newline caught? ",text)
     return JSON.stringify({
         exMessageType:"INSERT_TEXT",
-        cursorPosition:cursorPos,
-        text,
+        cursorPosition:insertionObject.pos,
+        range:insertionObject.rangeInfo,
+        text:insertionObject.text,
     })
 }
 
@@ -19,16 +19,6 @@ let replaceAll = (text) => {
         text,
     })
 }
-
-let deletionEvent = (cursorPos,numberChars) => {
-  console.log("calling deletion event")
-  return JSON.stringify({
-    exMessageType:"DELETE_TEXT",
-    cursorPosition:cursorPos,
-    numCharsToDelete:numberChars
-  })
-}
-
 // assuming that the tool has tracked the cursor to this point we should just evaluate the text here?
 // could be necessary to send cursorpos too...
 let requestChunkEval = () => {
@@ -49,15 +39,9 @@ function postToIodide(externalEditorMessageEvent,iodideEditorMessageEvent) {
       case "EVAL_CHUNK":
         externalEditorAction = requestChunkEval() 
         break;
-      case "DELETE_TEXT": 
-        console.log("using delete text")
-        externalEditorAction = deletionEvent(externalEditorMessageEvent.pos,externalEditorMessageEvent.numChars)
-        console.log("deletion to iodide is ",externalEditorAction)
-        console.log("missing e? ",iodideEditorMessageEvent.ports)
-        break;
       case "INSERT_TEXT":
         console.log("using insert text type")
-        externalEditorAction = insertText(externalEditorMessageEvent.text,externalEditorMessageEvent.pos)
+        externalEditorAction = insertText(externalEditorMessageEvent)
         break;
       default:
         console.log("using replace all type")
