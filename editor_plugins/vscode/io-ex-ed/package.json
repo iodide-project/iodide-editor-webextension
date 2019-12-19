@@ -1,6 +1,7 @@
 {
 	"name": "io-ex-ed",
 	"displayName": "io-ex-ed",
+  "publisher":"devin",
 	"description": "external editor for iodide support",
 	"version": "0.0.1",
 	"engines": {
@@ -10,19 +11,21 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:extension.helloWorld"
+		"onCommand:extension.connectIodide"
 	],
 	"main": "./extension.js",
-  "contributes": {
-    "keybindings":[{
-      "command":"extension.executeChunk",
-      "key":"ctrl+e",
-      "mac":"cmd+e"
-    }],
+	"contributes": {
+		"keybindings": [
+			{
+				"command": "extension.executeChunk",
+				"key": "ctrl+e",
+				"mac": "cmd+e"
+			}
+		],
 		"commands": [
 			{
-				"command": "extension.helloWorld",
-				"title": "Hello World"
+				"command": "extension.connectIodide",
+				"title": "connect Iodide"
 			}
 		]
 	},
@@ -41,6 +44,7 @@
 		"vscode-test": "^1.0.2"
 	},
 	"dependencies": {
+		"vsce": "^1.66.0",
 		"ws": "^7.1.2"
 	}
 }
