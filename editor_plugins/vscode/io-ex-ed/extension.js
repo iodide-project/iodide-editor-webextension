@@ -31,9 +31,9 @@ function activate(context) {
 				// wait half sec for the last editor can't catch all changes
 
 				editor.edit(editBuilder => {
-						editBuilder.replace(new vscode.Range(0, 0, document.lineCount, 0), `${msg}`);
-						filling = Date.now()
-						
+					editBuilder.replace(new vscode.Range(0, 0, document.lineCount, 0), `${msg}`);
+					filling = Date.now()
+
 				});
 			}
 		})
@@ -49,47 +49,38 @@ function activate(context) {
 	})
 	vscode.workspace.onDidChangeTextDocument((e) => {
 		console.log(e)
-
-		let text = e.contentChanges[0].text
-		if (Date.now() - filling <500) {
-			// 
-			console.log(filling,"filling in")
-			return
-		}
-		let col = e.contentChanges[0].range.start.character
-		let line = e.contentChanges[0].range.start.line
-		console.log("line", line)
-		console.log("column", col)
-		// calculate the index of change as single number instead of line and col, 
-		// makes insertion in iodide easier, fewer corner cases
-		// get the document contents, count columns in lines above current one, then add the column count, perhaps need to include the newline chars too
-		let flatInd = e.contentChanges[0].rangeOffset
-		let msgObj
-		// emit all the necessary deletion events
-		let charsRemoved = e.contentChanges[0].rangeLength
-		for (let i = 0; i < charsRemoved; i++) {
+		// iterate over the contentChanges array
+		for (let change of e.contentChanges) {
+			let text = change.text
+			if (Date.now() - filling < 500) {
+				// 
+				console.log(filling, "filling in")
+				return
+			}
+			let col = change.range.start.character
+			let line = change.range.start.line
+			console.log("line", line)
+			console.log("column", col)
+			// calculate the index of change as single number instead of line and col, 
+			// makes insertion in iodide easier, fewer corner cases
+			// get the document contents, count columns in lines above current one, then add the column count, perhaps need to include the newline chars too
+			let msgObj
+			// emit all the necessary deletion events
+			// technicallly the deletion and insertion could be seen as the same message with varying text values
 			msgObj = {
-				type: "DELETE_TEXT",
-				pos: [line, col, flatInd],
-				numChars: 1,
+				pos: [line, col],
+				type: "INSERT_TEXT",
+				rangeInfo: {
+					len: change.rangeLength,
+					offset: change.rangeOffset // when is this multiarrayed?
+				},
+				text,
 			}
 			if (sender) {
 				sender.send(JSON.stringify(msgObj))
 			}
+
 		}
-		msgObj = {
-			pos: [line, col],
-			type: "INSERT_TEXT",
-			rangeInfo:{
-				len:e.contentChanges[0].rangeLength,
-				offset:e.contentChanges[0].rangeOffset // when is this multiarrayed?
-			},
-			text,
-		}
-		if (sender) {
-			sender.send(JSON.stringify(msgObj))
-		}
-	
 	})
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with  registerCommand
