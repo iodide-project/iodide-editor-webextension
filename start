@@ -1,0 +1,3 @@
+#! /bin/bash
+
+$(npm bin)/web-ext run --start-url="localhost:8000/"
